@@ -38,30 +38,86 @@ def wcs_preprocessing(wcs, field: str):
         return wcs
 
 
-def catalogue_preprocessing(df: pd.DataFrame, random_state: Optional[int] = None) -> pd.DataFrame:
-    """Example Function to make preselections on the catalog to specific
-    sources meeting given criteria.
-    Args:
-        df (pd.DataFrame): Data frame containing catalogue information.
-        random_state (Optional[int], optional): Random state seed. Defaults to None.
-    Returns:
-        pd.DataFrame: Subset catalogue.
-    """
-    # Filter down to sources with predictions, cuts on other things have been made already for
-    # the zooniverse data set.
-    df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
-    df_zoo = df_zoo[["filename", "majority_classification", "vote_fraction"]]
-    df_zoo = df_zoo.rename({"filename": "NAME"}, axis="columns", errors="raise")
-    df = df.merge(df_zoo, on="NAME", how="inner")
+class catalogue_preprocessing:
+    def __init__(self, set: str = "certain", random_state: Optional[int] = None):
+        """
+        Args:
+            set (str, optional): Set to use. Defaults to "certain".
+            random_state (Optional[int], optional): Random state. Defaults to None.
+        """
+        self.set = set
+        self.df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
+        # Filter down to sources with predictions, cuts on other things have been made already for
+        # the zooniverse data set.
+        self.df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
+        self.df_zoo = self.df_zoo[["filename", "majority_classification", "vote_fraction"]]
+        self.df_zoo = self.df_zoo.rename({"filename": "NAME"}, axis="columns", errors="raise")
 
-    # Map FRI to label 0 and FRII to label 1
-    df["y"] = df["majority_classification"].map({"FRI": 0, "FRII": 1})
+        # Cut out certain/uncertain samples
+        if set == "certain":
+            self.df_zoo = self.df_zoo.query("vote_fraction > 0.65")
+        elif set == "uncertain":
+            self.df_zoo = self.df_zoo.query("vote_fraction <= 0.65 and vote_fraction > 0.5")
+        elif set == "all":
+            self.df_zoo = self.df_zoo.query("vote_fraction >= 0.5")
+        else:
+            raise ValueError(f"Invalid set: {set}")
 
-    return df.reset_index(drop=True)
+    def __call__(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df.merge(self.df_zoo, on="NAME", how="inner")
+
+        # Map FRI to label 0 and FRII to label 1
+        df["y"] = df["majority_classification"].map({"FRI": 0, "FRII": 1})
+
+        return df.reset_index(drop=True)
+
+
+# def catalogue_preprocessing(
+#     df: pd.DataFrame, random_state: Optional[int] = None, set="certain"
+# ) -> pd.DataFrame:
+#     """Example Function to make preselections on the catalog to specific
+#     sources meeting given criteria.
+#     Args:
+#         df (pd.DataFrame): Data frame containing catalogue information.
+#         random_state (Optional[int], optional): Random state seed. Defaults to None.
+#     Returns:
+#         pd.DataFrame: Subset catalogue.
+#     """
+#     # Filter down to sources with predictions, cuts on other things have been made already for
+#     # the zooniverse data set.
+#     df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
+#     df_zoo = df_zoo[["filename", "majority_classification", "vote_fraction"]]
+#     df_zoo = df_zoo.rename({"filename": "NAME"}, axis="columns", errors="raise")
+
+#     # Cut out certain/uncertain samples
+#     if set == "certain":
+#         df_zoo = df_zoo.query("vote_fraction > 0.65")
+#     elif set == "uncertain":
+#         df_zoo = df_zoo.query("vote_fraction <= 0.65 and vote_fraction > 0.5")
+#     elif set == "all":
+#         df_zoo = df_zoo.query("vote_fraction >= 0.5")
+#     else:
+#         raise ValueError(f"Invalid set: {set}")
+
+#     df = df.merge(df_zoo, on="NAME", how="inner")
+
+#     # Map FRI to label 0 and FRII to label 1
+#     df["y"] = df["majority_classification"].map({"FRI": 0, "FRII": 1})
+
+#     return df.reset_index(drop=True)
+
+# class
 
 
 class MighteeZoo:
-    def __init__(self, path: Path, transform):
+    def __init__(self, path: Path, transform, set: str = "certain"):
+        """
+        Args:
+            path (Path): Path to the data set.
+            transform (torchvision.transforms): Transform to apply to the images.
+            set (str, optional): Which set to use. ["certain", "uncertain", "all"].
+
+        """
         self.transform = transform
 
         catalogue_paths = [
@@ -81,7 +137,7 @@ class MighteeZoo:
             image_paths=image_paths,
             field_names=field_names,
             cutout_width=114,
-            catalogue_preprocessing=catalogue_preprocessing,
+            catalogue_preprocessing=catalogue_preprocessing(set=set),
             image_preprocessing=image_preprocessing,
         )
 

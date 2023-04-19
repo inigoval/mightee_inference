@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import matplotlib.pyplot as plt
 
 # Load .csv into pandas data frame
 df = pd.read_csv("zooniverse_mightee_classifications.csv")
@@ -64,14 +65,26 @@ df["vote_fraction"] = df["vote_fraction"].astype(float)
 # Drop rows with majority classification too noisy
 df = df.query("majority_classification != 'Too noisy/no source/not sure'")
 
-# Drop rows with vote fraction less than 0.5
-df = df.query("vote_fraction >= 0.7")
-
 # Drop rows with majority classification point source
 df = df.query("majority_classification != 'Point Source'")
 
+# Plot and save a histogram of vote fractions
+# df["vote_fraction"].hist(bins=[0, 0.55, 0.65, 0.85, 1.0])
+pd.value_counts(df["vote_fraction"]).sort_index().plot.bar()
+plt.savefig("vote_fraction_histogram.png")
 
+# Drop rows with vote fraction less than 0.5
+# df = df.query("vote_fraction >= 0.7")
+
+
+# Print some statistics
 print(f"Total number of sources remaining: {len(df)}")
+
+n_fri, n_frii = len(df.query('majority_classification == "FRI"')), len(
+    df.query('majority_classification == "FRII"')
+)
+print(f"Number of FRI sources remaining: {n_fri}")
+print(f"Number of FRII sources remaining: {n_frii}")
 print("\n")
 print(df.head())
 

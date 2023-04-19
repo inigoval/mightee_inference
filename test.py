@@ -17,6 +17,8 @@ transform = T.Compose(
 
 paths = Path_Handler()._dict()
 
-data = MighteeZoo(path=paths["mightee"], transform=transform)
+data = MighteeZoo(path=paths["mightee"], transform=transform, set="uncertain")
 
+print(f"Length of data set: {len(data)}")
+print("Printing first batch:")
 print(next(iter(DataLoader(data, batch_size=1))))
