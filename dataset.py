@@ -72,43 +72,6 @@ class catalogue_preprocessing:
         return df.reset_index(drop=True)
 
 
-# def catalogue_preprocessing(
-#     df: pd.DataFrame, random_state: Optional[int] = None, set="certain"
-# ) -> pd.DataFrame:
-#     """Example Function to make preselections on the catalog to specific
-#     sources meeting given criteria.
-#     Args:
-#         df (pd.DataFrame): Data frame containing catalogue information.
-#         random_state (Optional[int], optional): Random state seed. Defaults to None.
-#     Returns:
-#         pd.DataFrame: Subset catalogue.
-#     """
-#     # Filter down to sources with predictions, cuts on other things have been made already for
-#     # the zooniverse data set.
-#     df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
-#     df_zoo = df_zoo[["filename", "majority_classification", "vote_fraction"]]
-#     df_zoo = df_zoo.rename({"filename": "NAME"}, axis="columns", errors="raise")
-
-#     # Cut out certain/uncertain samples
-#     if set == "certain":
-#         df_zoo = df_zoo.query("vote_fraction > 0.65")
-#     elif set == "uncertain":
-#         df_zoo = df_zoo.query("vote_fraction <= 0.65 and vote_fraction > 0.5")
-#     elif set == "all":
-#         df_zoo = df_zoo.query("vote_fraction >= 0.5")
-#     else:
-#         raise ValueError(f"Invalid set: {set}")
-
-#     df = df.merge(df_zoo, on="NAME", how="inner")
-
-#     # Map FRI to label 0 and FRII to label 1
-#     df["y"] = df["majority_classification"].map({"FRI": 0, "FRII": 1})
-
-#     return df.reset_index(drop=True)
-
-# class
-
-
 class MighteeZoo:
     def __init__(self, path: Path, transform, set: str = "certain"):
         """
