@@ -1,0 +1,5 @@
+data:
+  set: 'certain' # ['certain', 'uncertain', 'all']
+  norm: 'rgz' # ['rgz', 'mightee']
+    
+bn: False # Activate batchnorm during inference (DA)

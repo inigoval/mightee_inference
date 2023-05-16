@@ -1,11 +1,29 @@
 import numpy as np
 import pandas as pd
+import torchvision.transforms as T
 
 from cata2data import CataData
 from astropy.stats import sigma_clipped_stats
 from typing import Optional
 from pathlib import Path
 from astropy.wcs import WCS
+from PIL import Image
+
+
+def array_to_png(img):
+    im = Image.fromarray(img)
+    im = im.convert("L")
+    return im
+
+
+def rescale_image(img, low):
+    img_max = np.max(img)
+    img_min = low
+    # img -= img_min
+    img /= max(1e-7, img_max - img_min)  # clamp divisor so it can't be zero
+    # img /= img_max - img_min
+    img *= 255.0
+    return img
 
 
 def image_preprocessing(image: np.ndarray, field: str) -> np.ndarray:
@@ -46,7 +64,6 @@ class catalogue_preprocessing:
             random_state (Optional[int], optional): Random state. Defaults to None.
         """
         self.set = set
-        self.df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
         # Filter down to sources with predictions, cuts on other things have been made already for
         # the zooniverse data set.
         self.df_zoo = pd.read_parquet("zooniverse_mightee_classifications.parquet")
@@ -73,7 +90,7 @@ class catalogue_preprocessing:
 
 
 class MighteeZoo:
-    def __init__(self, path: Path, transform, set: str = "certain"):
+    def __init__(self, path: Path, transform=T.ToTensor(), set: str = "certain", train=True):
         """
         Args:
             path (Path): Path to the data set.
@@ -109,13 +126,19 @@ class MighteeZoo:
 
         img = self.catadata[index]
 
+        # Remove NaNs
+        img = np.nan_to_num(img, nan=0.0)
+
         _, _, rms = sigma_clipped_stats(img)
 
         # Clip values below 3 sigma
         img[np.where(img <= 3 * rms)] = 0.0
 
-        # Remove NaNs
-        img = np.nan_to_num(img, nan=0.0)
+        img = rescale_image(img, 3 * rms)
+
+        img = array_to_png(np.squeeze(img))
+
+        img = np.copy(img)
 
         # Apply transform
         img = self.transform(np.squeeze(img))
@@ -126,3 +149,9 @@ class MighteeZoo:
 
     def __len__(self):
         return self.catadata.__len__()
+
+    def get_labels(self, index: Optional[int] = None):
+        if index is None:
+            return self.catadata.df["y"].values
+        else:
+            return self.catadata.df.loc[index, "y"]

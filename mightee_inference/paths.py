@@ -8,14 +8,12 @@ class Path_Handler:
         self, **kwargs
     ):  # use defaults except where specified in kwargs e.g. Path_Handler(data=some_alternative_dir)
         path_dict = {}
-        path_dict["root"] = kwargs.get("root", Path(__file__).resolve().parent.parent)
-        path_dict["project"] = kwargs.get("project", Path(__file__).resolve().parent)  # i.e. this repo
+        path_dict["root"] = kwargs.get("root", Path(__file__).resolve().parent.parent.parent)
+        path_dict["project"] = kwargs.get(
+            "project", Path(__file__).resolve().parent.parent
+        )  # i.e. this repo
 
         path_dict["data"] = kwargs.get("data", path_dict["root"] / "_data")
-
-        path_dict["files"] = kwargs.get("files", path_dict["project"] / "files")
-        path_dict["main"] = kwargs.get("main", path_dict["project"] / "byol")
-        path_dict["config"] = kwargs.get("config", path_dict["project"] / "config")
 
         for key, path_str in path_dict.copy().items():
             path_dict[key] = Path(path_str)
